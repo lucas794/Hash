@@ -85,7 +85,11 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato)
 	/*Se encontro un par!!*/
 	if( prox != NULL && prox->llave != NULL && !strcmp(clave, prox->llave) )
 	{
-		hash->f_destruir(prox->valor);
+		if( hash->f_destruir )
+			hash->f_destruir(prox->valor);
+		else
+			free(prox->valor);
+			
 		prox->valor = dato; /*actualizamos su dato*/
 	}
 	else /* No se encontró ninguno, armemos una nuevo dato! */
@@ -148,7 +152,10 @@ void *hash_borrar(hash_t *hash, const char *clave)
 				hash->elementos_hash[pos] = cabeza_lista->siguiente;
 			}
 			
-			hash->f_destruir(cabeza_lista->valor);
+			if( hash->f_destruir )
+				hash->f_destruir(cabeza_lista->valor);
+			else
+				free(cabeza_lista->valor);
 			
 			free(cabeza_lista);
 			
