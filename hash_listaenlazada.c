@@ -1,5 +1,3 @@
-/* hash usando lista enlazada previamente subido acá */
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -78,6 +76,9 @@ nodo_t* crear_nodo(const char *clave, void *dato)
 
 bool hash_guardar(hash_t *hash, const char *clave, void *dato)
 {
+	if( !hash )
+		return false;
+
 	unsigned long pos = hash_string(clave);
 
 	// algoritmo redirección.
@@ -141,6 +142,9 @@ bool hash_guardar(hash_t *hash, const char *clave, void *dato)
 
 void *hash_borrar(hash_t *hash, const char *clave)
 {
+	if( !hash )
+		return NULL;
+
 	unsigned long pos = hash_string(clave);
 
 	if( !hash->tabla_hash[pos] )
@@ -182,6 +186,9 @@ void *hash_borrar(hash_t *hash, const char *clave)
 
 void *hash_obtener(const hash_t *hash, const char *clave)
 {
+	if( !hash )
+		return NULL;
+
 	unsigned long pos = hash_string(clave);
 
 	if( !hash->tabla_hash[pos] )
