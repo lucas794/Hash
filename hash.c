@@ -242,8 +242,6 @@ void hash_destruir(hash_t *hash)
 {
 	nodo_t* tmp_vagon = NULL;
 
-	//for( size_t i = 0; i < hash->tam; i++ )
-	//{
 	if(hash->cant_elementos==0){
 		free(hash->elementos_hash);
 		free(hash);
@@ -274,7 +272,7 @@ void hash_destruir(hash_t *hash)
 		}while(!hash->elementos_hash[poc]); //se avanza hasta la siguiente poc valida
 
 	}
-	//}
+
 	free(hash->elementos_hash);
 	free(hash);
 }
@@ -288,12 +286,12 @@ hash_iter_t* hash_iter_crear(const hash_t* hash){
 	}
 
 	iter->index = 0;
-	iter->elemento = NULL;
 	iter->tabla_hash = hash;
-	iter->iterados = 1;
+	iter->elemento = hash->elementos_hash[0];
+	iter->iterados = 0;
 	while( iter->elemento == NULL )
 	{
-		if( iter->index < iter->tabla_hash->tam - 1 )
+		if( iter->index < iter->tabla_hash->tam )
 		{
 			iter->index++;
 			iter->elemento = iter->tabla_hash->elementos_hash[iter->index];
@@ -301,7 +299,6 @@ hash_iter_t* hash_iter_crear(const hash_t* hash){
 		else
 			break;
 	}
-
 	return iter;
 }
 
@@ -323,16 +320,9 @@ bool hash_iter_avanzar(hash_iter_t* iter){
 		iter->elemento=iter->tabla_hash->elementos_hash[iter->index];
 		while( iter->elemento == NULL )
 		{
-			if( iter->index < iter->tabla_hash->tam)
-			{
-				iter->index++;
-				iter->elemento = iter->tabla_hash->elementos_hash[iter->index];
-			}
-			else{
-				printf("FAlse \n");
+			iter->index++;
+			iter->elemento = iter->tabla_hash->elementos_hash[iter->index];
 
-				return false;
-			}
 		}
 
 	}

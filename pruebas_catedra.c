@@ -17,14 +17,6 @@
 /* ******************************************************************
  *                        PRUEBAS UNITARIAS
  * *****************************************************************/
-void imprimir_cad(const char* cadena){
-    size_t pos=0;
-    while(cadena[pos]!='\0'){
-        printf("%c",cadena[pos]);
-        pos++;
-    }
-    printf("\n");
-}
 
 static void prueba_crear_hash_vacio()
 {
@@ -380,9 +372,9 @@ static void prueba_hash_iterar_volumen(size_t largo)
             break;
         }
 
-        //printf("%zu\n",*valor);
+
         *valor = largo;
-        //printf("%zu---%zu\n",largo,valores[i]);
+
 
 
         hash_iter_avanzar(iter);
@@ -394,7 +386,6 @@ static void prueba_hash_iterar_volumen(size_t largo)
 
     ok = true;
     for (i = 0; i < largo; i++) {
-        //printf("%zu --- %zu\n",valores[i],largo);
         if ( valores[i] != largo ) {
             ok = false;
             break;
