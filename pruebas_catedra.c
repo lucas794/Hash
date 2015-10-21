@@ -205,21 +205,24 @@ static void prueba_hash_valor_null()
     print_test("Prueba hash pertenece clave vacia, es true", hash_pertenece(hash, clave));
     print_test("Prueba hash borrar clave vacia, es valor NULL", hash_borrar(hash, clave) == valor);
     print_test("Prueba hash la cantidad de elementos es 0", hash_cantidad(hash) == 0);
-
     hash_destruir(hash);
+
 }
 
 static void prueba_hash_volumen(size_t largo, bool debug)
 {
+
     hash_t* hash = hash_crear(NULL);
 
     const size_t largo_clave = 10;
+
     char (*claves)[largo_clave] = malloc(largo * largo_clave);
 
     unsigned* valores[largo];
 
     /* Inserta 'largo' parejas en el hash */
     bool ok = true;
+    printf("OK\n");
     for (unsigned i = 0; i < largo; i++) {
         valores[i] = malloc(sizeof(int));
         sprintf(claves[i], "%08d", i);
@@ -303,7 +306,6 @@ static void prueba_hash_iterar()
     print_test("Prueba hash iterador ver actual, no es el mismo puntero", clave != claves[indice]);
     print_test("Prueba hash iterador avanzar es true", hash_iter_avanzar(iter));
     print_test("Prueba hash iterador esta al final, es false", !hash_iter_al_final(iter));
-
     /* Segundo valor */
     clave = hash_iter_ver_actual(iter);
     indice = buscar(clave, claves, sizeof(claves) / sizeof(char *));
