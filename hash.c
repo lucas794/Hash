@@ -150,9 +150,9 @@ bool _hash_redimensionar(hash_t* hash, size_t tamanio_a_reasignar ){
 			while(actual){
 				_funcion_guardar(hash,actual->llave,actual->valor);
 				free(actual->llave);
-				nodo_t* auxiliar = actual;
+				nodo_t* nodo_auxiliar = actual;
 				actual=actual->siguiente;
-				free(auxiliar);
+				free(nodo_auxiliar);
 			}
 		}
 
@@ -198,10 +198,7 @@ void *hash_borrar(hash_t *hash, const char *clave)
 			{
 				hash->elementos_hash[pos] = cabeza_lista->siguiente;
 			}
-			if( hash->f_destruir )
-			{
-				hash->f_destruir(cabeza_lista->valor);
-			}
+
 			free(cabeza_lista->llave);
 			free(cabeza_lista);
 			hash->cant_elementos--;
@@ -270,7 +267,6 @@ void hash_destruir(hash_t *hash)
 		for( nodo_t* e = hash->elementos_hash[i]; e ;  )
 		{
 			tmp_vagon = e;
-
 			if(hash->f_destruir)
 			{
 				hash->f_destruir(tmp_vagon->valor);
