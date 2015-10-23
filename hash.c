@@ -1,5 +1,4 @@
 #define _XOPEN_SOURCE 500
-
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -25,6 +24,7 @@ const size_t TAMANIO_INICIAL = 1024;
 
 #define FACTOR_UTILIZACION_MEMORIA 4
 #define FACTOR_MULTIPLICADOR 2
+#define TOPE_FACTOR_CARGA 0.7
 
 struct hash_iter{
 	const hash_t* tabla_hash;
@@ -74,98 +74,122 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato)
 	return crear_hash;
 }
 
+
+bool _funcion_guardar(hash_t *hash, const char* clave, void *dato){
+   unsigned long pos = hash_string(clave);
+   nodo_t* prox = hash->elementos_hash[pos];
+   nodo_t* ultimo = NULL;
+
+   /* El bucle aquí intenta buscar el dato aver si existe colision*/
+   while( prox != NULL && prox->llave != NULL && strcmp(clave, prox->llave) )
+   {
+	   ultimo = prox;
+	   prox = prox->siguiente;
+   }
+
+   /*Se encontro un par!!*/
+   if( prox != NULL && prox->llave != NULL && !strcmp(clave, prox->llave) )
+   {
+	   if( hash->f_destruir )
+		   hash->f_destruir(prox->valor);
+
+	   prox->valor = dato; /*actualizamos su dato*/
+   }
+   else /* No se encontró ninguno, armemos una nuevo dato! */
+   {
+	   nodo_t* nuevo_dato;
+	   if( !(nuevo_dato = malloc(sizeof(nodo_t))) )
+		   return false;
+
+	   if( (nuevo_dato->llave = strdup(clave)) == NULL )
+	   {
+		   free(nuevo_dato);
+		   return false;
+	   }
+	   nuevo_dato->valor = dato;
+
+	   nuevo_dato->siguiente = NULL;
+
+	   /*Ahora, tenemos que verificar DONDE estamos parados
+		* Para insertarlo */
+	   if( prox == hash->elementos_hash[pos] ) /* ¿Al principio? */
+	   {
+		   nuevo_dato->siguiente = prox;
+		   hash->elementos_hash[pos] = nuevo_dato;
+	   }
+	   else if( prox == NULL ) /* Estamos en el final Ó no existe tal posicion */
+	   {
+		   ultimo->siguiente = nuevo_dato;
+	   }
+	   else /* estamos en el medio de la 'lista' */
+	   {
+		   nuevo_dato->siguiente = prox;
+		   ultimo->siguiente = nuevo_dato;
+	   }
+	   hash->cant_elementos++;
+   }
+   return true;
+}
+
 bool _hash_redimensionar(hash_t* hash, size_t tamanio_a_reasignar ){
-	
-	void* auxiliar = realloc(hash->elementos_hash, sizeof(nodo_t*) * tamanio_a_reasignar );
-	
-	if( !auxiliar )
-		return false;
-	
-	hash->elementos_hash = auxiliar;
-	hash->tam = tamanio_a_reasignar;
-	
-	return true;
+
+   nodo_t** auxiliar = malloc(sizeof(nodo_t*) * tamanio_a_reasignar);
+   if( !auxiliar ){
+	   return false;
+   }
+   nodo_t** tabla_a_reemplazar= hash->elementos_hash;
+   for( size_t i = 0; i < tamanio_a_reasignar; i++ ){
+	   auxiliar[i] = NULL;
+   }
+   nodo_t* actual;
+   hash->elementos_hash=auxiliar;
+   hash->cant_elementos=0;
+   for( size_t i = 0; i < hash->tam-1; i++ ){
+  		if(tabla_a_reemplazar[i]){
+			actual=tabla_a_reemplazar[i];
+			while(actual){
+				_funcion_guardar(hash,actual->llave,actual->valor);
+				free(actual->llave);
+				nodo_t* nodo_auxiliar = actual;
+				actual=actual->siguiente;
+				free(nodo_auxiliar);
+			}
+		}
+
+   }
+   free(tabla_a_reemplazar);
+   hash->tam=tamanio_a_reasignar;
+   return true;
 }
 
 
-bool hash_guardar(hash_t *hash, const char *clave, void *dato)
+bool hash_guardar(hash_t *hash, const char* clave, void *dato)
 {
-	unsigned long pos = hash_string(clave);
-
-	if( pos >= hash->tam ) /* ¿Pasamos el límite asignado? */
-	{	
-		if( !_hash_redimensionar(hash, hash->tam * FACTOR_MULTIPLICADOR) ) /* no se puede alargar el doble ? */
-			return false;
-	}
-
-	nodo_t* prox = hash->elementos_hash[pos];
-	nodo_t* ultimo = NULL;
-
-	/* El bucle aquí intenta buscar el dato aver si existe colision*/
-	while( prox != NULL && prox->llave != NULL && strcmp(clave, prox->llave) )
-	{
-		ultimo = prox;
-		prox = prox->siguiente;
-	}
-
-	/*Se encontro un par!!*/
-	if( prox != NULL && prox->llave != NULL && !strcmp(clave, prox->llave) )
-	{
-		if( hash->f_destruir )
-			hash->f_destruir(prox->valor);
-
-		prox->valor = dato; /*actualizamos su dato*/
-	}
-	else /* No se encontró ninguno, armemos una nuevo dato! */
-	{
-		nodo_t* nuevo_dato;
-		if( !(nuevo_dato = malloc(sizeof(nodo_t))) )
-			return false;
-		
-		if( (nuevo_dato->llave = strdup(clave)) == NULL )
-		{
-			free(nuevo_dato);
-			return false;
-		}		
-		
-		nuevo_dato->valor = dato;
-		
-		nuevo_dato->siguiente = NULL;
-
-		/*Ahora, tenemos que verificar DONDE estamos parados
-		 * Para insertarlo */
-		if( prox == hash->elementos_hash[pos] ) /* ¿Al principio? */
-		{
-			nuevo_dato->siguiente = prox;
-			hash->elementos_hash[pos] = nuevo_dato;
-		}
-		else if( prox == NULL ) /* Estamos en el final Ó no existe tal posicion */
-		{
-			ultimo->siguiente = nuevo_dato;
-		}
-		else /* estamos en el medio de la 'lista' */
-		{
-			nuevo_dato->siguiente = prox;
-			ultimo->siguiente = nuevo_dato;
-		}
-		hash->cant_elementos++;
-	}
-	return true;
+   unsigned long pos = hash_string(clave);
+   float factor_de_carga = (float)hash->cant_elementos/(float)hash->tam;
+   if(factor_de_carga>=TOPE_FACTOR_CARGA || pos>hash->tam){
+	   size_t nuevo_tamanio = hash->tam*FACTOR_MULTIPLICADOR;
+	   if(!_hash_redimensionar(hash,nuevo_tamanio)){
+		   return false;
+	   }
+   }
+   return _funcion_guardar(hash, clave, dato);
 }
+
 
 void *hash_borrar(hash_t *hash, const char *clave)
-{					
+{
 	unsigned long pos = hash_string(clave);
 
 	nodo_t* cabeza_lista = hash->elementos_hash[pos];
 	nodo_t* anterior = NULL;
-						
+
 	while( cabeza_lista != NULL ) /* debemos iterar para encontarlo*/
 	{
 		if( !strcmp(cabeza_lista->llave, clave) )
 		{
 			void* dato_eliminado = cabeza_lista->valor;
-		
+
 			if( anterior != NULL ) /* significa que iteró al menos 1 vez*/
 			{
 				anterior->siguiente = cabeza_lista->siguiente;
@@ -174,32 +198,25 @@ void *hash_borrar(hash_t *hash, const char *clave)
 			{
 				hash->elementos_hash[pos] = cabeza_lista->siguiente;
 			}
-			if( hash->f_destruir )
-			{
-				hash->f_destruir(cabeza_lista->valor);
-				hash->f_destruir(cabeza_lista->llave);
-			}
-			else
-			{
-				free(cabeza_lista->llave);
-			}
-			free(cabeza_lista);		
-			hash->cant_elementos--;	
+
+			free(cabeza_lista->llave);
+			free(cabeza_lista);
+			hash->cant_elementos--;
 			return dato_eliminado;
 		}
 		anterior = cabeza_lista;
 		cabeza_lista = cabeza_lista->siguiente;
 	}
-	
-	if( (hash->tam - 1) < (hash->cant_elementos / FACTOR_UTILIZACION_MEMORIA) ) 
+
+	if( (hash->tam - 1) < (hash->cant_elementos / FACTOR_UTILIZACION_MEMORIA) )
 			if( !_hash_redimensionar(hash, hash->tam / FACTOR_MULTIPLICADOR) )
-					return NULL;	
-					
+					return NULL;
+
 	/* No se encontró , devolvemos NULL */
 	return NULL;
 }
 
-void *hash_obtener(const hash_t *hash, const char *clave)
+void *hash_obtener(const hash_t *hash, const char* clave)
 {
 	unsigned long pos = hash_string(clave);
 	nodo_t* inicio = hash->elementos_hash[pos];
@@ -221,14 +238,14 @@ bool hash_pertenece(const hash_t *hash, const char *clave)
 	if(!hash_cantidad(hash)){
 		return false;
 	}
-	
+
 	/* acá hay que recorrer no solo la tabla hash
 		 * sinó sus sub-nodos que pueden salir de cada index. */
 	for(size_t posicion=0;posicion<hash->tam;posicion++)
 		for( nodo_t* e = hash->elementos_hash[posicion]; e; e = e->siguiente )
 			if( !strcmp(e->llave, clave) )
 				return true;
-				
+
 	return false;
 }
 
@@ -239,24 +256,23 @@ size_t hash_cantidad(const hash_t *hash)
 
 void hash_destruir(hash_t *hash)
 {
+	if(hash->cant_elementos==0){
+		free(hash->elementos_hash);
+		free(hash);
+		return;
+	}
 	nodo_t* tmp_vagon = NULL;
-
 	for( size_t i = 0; i < hash->tam; i++ )
 	{
 		for( nodo_t* e = hash->elementos_hash[i]; e ;  )
 		{
 			tmp_vagon = e;
-
 			if(hash->f_destruir)
 			{
-				hash->f_destruir(tmp_vagon->llave);
 				hash->f_destruir(tmp_vagon->valor);
 			}
-			else
-			{
-				free(tmp_vagon->llave);
-			}
 			e = e->siguiente;
+			free(tmp_vagon->llave);
 			free(tmp_vagon);
 		}
 	}
@@ -273,12 +289,12 @@ hash_iter_t* hash_iter_crear(const hash_t* hash){
 	}
 
 	iter->index = 0;
-	iter->elemento = NULL;
 	iter->tabla_hash = hash;
+	iter->elemento = hash->elementos_hash[0];
 	iter->iterados = 0;
 	while( iter->elemento == NULL )
 	{
-		if( iter->index < iter->tabla_hash->tam - 1 )
+		if( iter->index < iter->tabla_hash->tam-1)
 		{
 			iter->index++;
 			iter->elemento = iter->tabla_hash->elementos_hash[iter->index];
@@ -286,7 +302,6 @@ hash_iter_t* hash_iter_crear(const hash_t* hash){
 		else
 			break;
 	}
-	
 	return iter;
 }
 
@@ -298,23 +313,20 @@ bool hash_iter_avanzar(hash_iter_t* iter){
 	if(hash_iter_al_final(iter)){
 		return false;
 	}
-	
-	if( iter->elemento->siguiente )
+	if( iter->elemento->siguiente)
 	{
 		iter->elemento = iter->elemento->siguiente;
 	}
 	else
 	{
-		while( iter->elemento == NULL )
+		iter->index++;
+		iter->elemento=iter->tabla_hash->elementos_hash[iter->index];
+		while( iter->elemento == NULL && iter->index<iter->tabla_hash->tam-1)
 		{
-			if( iter->index < iter->tabla_hash->tam - 1 )
-			{
-				iter->index++;
-				iter->elemento = iter->tabla_hash->elementos_hash[iter->index];
-			}
-			else
-				return false;
+			iter->index++;
+			iter->elemento = iter->tabla_hash->elementos_hash[iter->index];
 		}
+
 	}
 	iter->iterados++;
 	return true;
