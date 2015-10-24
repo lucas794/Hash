@@ -245,7 +245,7 @@ bool hash_pertenece(const hash_t *hash, const char *clave)
 
 	unsigned long pos = hash_string(clave);
 
-	for( nodo_t* e = hash->elementos_hash[pos]; e; e = e->siguiente )
+	for( nodo_t* e = hash->elementos_hash[pos]; e; e = e->siguiente ) 
 		if( !strcmp(e->llave, clave) )
 			return true;
 
