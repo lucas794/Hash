@@ -239,12 +239,15 @@ bool hash_pertenece(const hash_t *hash, const char *clave)
 		return false;
 	}
 
-	/* acá hay que recorrer no solo la tabla hash
-		 * sinó sus sub-nodos que pueden salir de cada index. */
-	for(size_t posicion=0;posicion<hash->tam;posicion++)
-		for( nodo_t* e = hash->elementos_hash[posicion]; e; e = e->siguiente )
-			if( !strcmp(e->llave, clave) )
-				return true;
+	/* nó, recordemos que aplicando la funcion hash
+	a clave nos dá automaticamente su posición index en la tabla de hash
+	solo debemos iterar desde esa posicion hasta finalizar  */
+
+	unsigned long pos = hash_string(clave);
+
+	for( nodo_t* e = hash->elementos_hash[pos]; e; e = e->siguiente )
+		if( !strcmp(e->llave, clave) )
+			return true;
 
 	return false;
 }
@@ -261,6 +264,7 @@ void hash_destruir(hash_t *hash)
 		free(hash);
 		return;
 	}
+
 	nodo_t* tmp_vagon = NULL;
 	for( size_t i = 0; i < hash->tam; i++ )
 	{
