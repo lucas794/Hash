@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include "hash.h"
+#include <math.h>
 
 typedef struct nodo nodo_t;
 
@@ -34,7 +35,7 @@ struct hash_iter{
 };
 
 /* http://www.cse.yorku.ca/~oz/hash.html complete hash functions */
-unsigned long hash_string(const char *str)
+/*unsigned long hash_string(const char *str)
 {
 	unsigned int hash = 0;
 	unsigned int c = (unsigned int) *str;
@@ -46,6 +47,14 @@ unsigned long hash_string(const char *str)
 	}
 
 	return hash;
+}*/
+size_t sascii(const char* ch, size_t M) {
+  size_t ch_len = strlen(ch);
+
+  size_t i, sum;
+  for (sum=0, i=0; i < ch_len; i++)
+    sum += (size_t)fabs(ch[i]);
+  return sum % M;
 }
 
 hash_t *hash_crear(hash_destruir_dato_t destruir_dato)
@@ -76,7 +85,7 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato)
 
 
 bool _funcion_guardar(hash_t *hash, const char* clave, void *dato){
-   unsigned long pos = hash_string(clave);
+   size_t pos = sascii(clave,hash->tam);
    nodo_t* prox = hash->elementos_hash[pos];
    nodo_t* ultimo = NULL;
 
@@ -165,7 +174,7 @@ bool _hash_redimensionar(hash_t* hash, size_t tamanio_a_reasignar ){
 
 bool hash_guardar(hash_t *hash, const char* clave, void *dato)
 {
-   unsigned long pos = hash_string(clave);
+   size_t pos = sascii(clave,hash->tam);
    float factor_de_carga = (float)hash->cant_elementos/(float)hash->tam;
    if(factor_de_carga>=TOPE_FACTOR_CARGA || pos>hash->tam){
 	   size_t nuevo_tamanio = hash->tam*FACTOR_MULTIPLICADOR;
@@ -179,7 +188,7 @@ bool hash_guardar(hash_t *hash, const char* clave, void *dato)
 
 void *hash_borrar(hash_t *hash, const char *clave)
 {
-	unsigned long pos = hash_string(clave);
+	size_t pos = sascii(clave,hash->tam);
 
 	nodo_t* cabeza_lista = hash->elementos_hash[pos];
 	nodo_t* anterior = NULL;
@@ -218,7 +227,7 @@ void *hash_borrar(hash_t *hash, const char *clave)
 
 void *hash_obtener(const hash_t *hash, const char* clave)
 {
-	unsigned long pos = hash_string(clave);
+	size_t pos = sascii(clave,hash->tam);
 	nodo_t* inicio = hash->elementos_hash[pos];
 
 	while( inicio != NULL )
@@ -243,9 +252,9 @@ bool hash_pertenece(const hash_t *hash, const char *clave)
 	a clave nos dá automaticamente su posición index en la tabla de hash
 	solo debemos iterar desde esa posicion hasta finalizar  */
 
-	unsigned long pos = hash_string(clave);
+	size_t pos = sascii(clave,hash->tam);
 
-	for( nodo_t* e = hash->elementos_hash[pos]; e; e = e->siguiente ) 
+	for( nodo_t* e = hash->elementos_hash[pos]; e; e = e->siguiente )
 		if( !strcmp(e->llave, clave) )
 			return true;
 
