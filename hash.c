@@ -34,20 +34,7 @@ struct hash_iter{
 	nodo_t* elemento;
 };
 
-/* http://www.cse.yorku.ca/~oz/hash.html complete hash functions */
-/*unsigned long hash_string(const char *str)
-{
-	unsigned int hash = 0;
-	unsigned int c = (unsigned int) *str;
-	while( *str != '\0' )
-	{
-	    hash += c;
-		str++;
-		c = (unsigned int) *str;
-	}
-
-	return hash;
-}*/
+//http://algoviz.org/OpenDSA/Books/OpenDSA/html/HashFuncExamp.html
 size_t sascii(const char* ch, size_t M) {
   size_t ch_len = strlen(ch);
 
@@ -174,9 +161,9 @@ bool _hash_redimensionar(hash_t* hash, size_t tamanio_a_reasignar ){
 
 bool hash_guardar(hash_t *hash, const char* clave, void *dato)
 {
-   size_t pos = sascii(clave,hash->tam);
+
    float factor_de_carga = (float)hash->cant_elementos/(float)hash->tam;
-   if(factor_de_carga>=TOPE_FACTOR_CARGA || pos>hash->tam){
+   if(factor_de_carga>=TOPE_FACTOR_CARGA){
 	   size_t nuevo_tamanio = hash->tam*FACTOR_MULTIPLICADOR;
 	   if(!_hash_redimensionar(hash,nuevo_tamanio)){
 		   return false;
