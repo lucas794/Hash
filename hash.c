@@ -40,7 +40,7 @@ size_t sascii(const char* ch, size_t M) {
 
   size_t i, sum;
   for (sum=0, i=0; i < ch_len; i++)
-    sum += (size_t)fabs(ch[i]);
+    sum += (size_t)ch[i];
   return sum % M;
 }
 
