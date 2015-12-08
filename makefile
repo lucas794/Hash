@@ -1,6 +1,7 @@
 EXEC=hash
 CC=gcc
-FLAGS= -std=c99 -Wall -Wconversion -Wtype-limits -Wbad-function-cast -Wshadow -Wpointer-arith -Wunreachable-code -pedantic -Werror -MMD
+
+FLAGS= -std=c99 -g -Wall -Wconversion -Wtype-limits -Wbad-function-cast -Wshadow -Wpointer-arith -Wunreachable-code -pedantic -Werror -MMD
 OBJS=$(wildcard *.c) $(wildcard *.h)
 
 all: $(EXEC)

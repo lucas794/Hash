@@ -207,6 +207,7 @@ static void prueba_hash_valor_null()
     print_test("Prueba hash la cantidad de elementos es 0", hash_cantidad(hash) == 0);
     hash_destruir(hash);
 
+
 }
 
 static void prueba_hash_volumen(size_t largo, bool debug)
@@ -219,7 +220,6 @@ static void prueba_hash_volumen(size_t largo, bool debug)
     char (*claves)[largo_clave] = malloc(largo * largo_clave);
 
     unsigned* valores[largo];
-
     /* Inserta 'largo' parejas en el hash */
     bool ok = true;
     for (unsigned i = 0; i < largo; i++) {
@@ -227,7 +227,10 @@ static void prueba_hash_volumen(size_t largo, bool debug)
         sprintf(claves[i], "%08d", i);
         *valores[i] = i;
         ok = hash_guardar(hash, claves[i], valores[i]);
-        if (!ok) break;
+        if (!ok){
+            printf("!!!!\n");
+            break;
+        }
     }
 
     if (debug) print_test("Prueba hash almacenar muchos elementos", ok);
@@ -236,9 +239,16 @@ static void prueba_hash_volumen(size_t largo, bool debug)
     /* Verifica que devuelva los valores correctos */
     for (size_t i = 0; i < largo; i++) {
         ok = hash_pertenece(hash, claves[i]);
-        if (!ok) break;
+
+        if (!ok){
+            printf("!!!!\n");
+            break;
+        }
         ok = hash_obtener(hash, claves[i]) == valores[i];
-        if (!ok) break;
+        if (!ok){
+            printf("¡¡¡¡\n");
+            break;
+        }
     }
 
     if (debug) print_test("Prueba hash pertenece y obtener muchos elementos", ok);
@@ -342,7 +352,7 @@ static void prueba_hash_iterar_volumen(size_t largo)
 
     /* Inserta 'largo' parejas en el hash */
     bool ok = true;
-    for (unsigned i = 0; i < largo; i++){
+    for (unsigned i = 0; i < largo; i++) {
         sprintf(claves[i], "%08d", i);
         valores[i] = i;
         ok = hash_guardar(hash, claves[i], &valores[i]);
@@ -357,6 +367,7 @@ static void prueba_hash_iterar_volumen(size_t largo)
     unsigned i;
     const char *clave;
     size_t *valor;
+
     for (i = 0; i < largo; i++) {
         if ( hash_iter_al_final(iter) ) {
             ok = false;
@@ -372,14 +383,8 @@ static void prueba_hash_iterar_volumen(size_t largo)
             ok = false;
             break;
         }
-
-
         *valor = largo;
-
-
-
         hash_iter_avanzar(iter);
-
     }
     print_test("Prueba hash iteración en volumen", ok);
     print_test("Prueba hash iteración en volumen, recorrio todo el largo", i == largo);
