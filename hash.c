@@ -118,7 +118,7 @@ bool _funcion_guardar(hash_t *hash, const char* clave, void *dato){
 	   {
 		   ultimo->siguiente = nuevo_dato;
 	   }
-	  /* else
+	  /*else
 	   {
 		   nuevo_dato->siguiente = prox;
 		   ultimo->siguiente = nuevo_dato;
@@ -142,7 +142,7 @@ bool _hash_redimensionar(hash_t* hash, size_t tamanio_a_reasignar ){
    hash->cant_elementos=0;
    hash->tam=tamanio_a_reasignar;
    nodo_t* actual;
-   for( size_t i = 0; i < tamanio_anterior-1; i++ ){
+   for( size_t i = 0; i < tamanio_anterior; i++ ){
   		if(tabla_a_reemplazar[i]){
 			actual=tabla_a_reemplazar[i];
 			while(actual){
