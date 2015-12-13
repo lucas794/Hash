@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include "hash.h"
+#include <math.h>
 
 typedef struct nodo nodo_t;
 
@@ -33,20 +34,18 @@ struct hash_iter{
 	nodo_t* elemento;
 };
 
-/* http://www.cse.yorku.ca/~oz/hash.html complete hash functions */
-unsigned long hash_string(const char *str)
-{
-	unsigned int hash = 0;
-	unsigned int c = (unsigned int) *str;
-	while( *str != '\0' )
-	{
-	    hash += c;
-		str++;
-		c = (unsigned int) *str;
-	}
 
-	return hash;
-}
+unsigned long _funcion_hash(const char *str,size_t tamanio_hash)
+    {
+        unsigned long hash = 5381;
+        unsigned int c;
+
+        while ((c = (unsigned)*str++))
+            hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+        return hash%tamanio_hash;
+    }
+
 
 hash_t *hash_crear(hash_destruir_dato_t destruir_dato)
 {
@@ -76,7 +75,7 @@ hash_t *hash_crear(hash_destruir_dato_t destruir_dato)
 
 
 bool _funcion_guardar(hash_t *hash, const char* clave, void *dato){
-   unsigned long pos = hash_string(clave);
+   unsigned long pos = _funcion_hash(clave,hash->tam);
    nodo_t* prox = hash->elementos_hash[pos];
    nodo_t* ultimo = NULL;
 
@@ -110,41 +109,40 @@ bool _funcion_guardar(hash_t *hash, const char* clave, void *dato){
 
 	   nuevo_dato->siguiente = NULL;
 
-	   /*Ahora, tenemos que verificar DONDE estamos parados
-		* Para insertarlo */
 	   if( prox == hash->elementos_hash[pos] ) /* ¿Al principio? */
 	   {
 		   nuevo_dato->siguiente = prox;
 		   hash->elementos_hash[pos] = nuevo_dato;
 	   }
-	   else if( prox == NULL ) /* Estamos en el final Ó no existe tal posicion */
+	   else if( prox == NULL )
 	   {
 		   ultimo->siguiente = nuevo_dato;
 	   }
-	   else /* estamos en el medio de la 'lista' */
+	  /*else
 	   {
 		   nuevo_dato->siguiente = prox;
 		   ultimo->siguiente = nuevo_dato;
-	   }
+	   }*/
 	   hash->cant_elementos++;
    }
    return true;
 }
 
 bool _hash_redimensionar(hash_t* hash, size_t tamanio_a_reasignar ){
-
    nodo_t** auxiliar = malloc(sizeof(nodo_t*) * tamanio_a_reasignar);
    if( !auxiliar ){
 	   return false;
    }
-   nodo_t** tabla_a_reemplazar= hash->elementos_hash;
    for( size_t i = 0; i < tamanio_a_reasignar; i++ ){
 	   auxiliar[i] = NULL;
-   }
-   nodo_t* actual;
+   	}
+   nodo_t** tabla_a_reemplazar= hash->elementos_hash;
+   size_t tamanio_anterior = hash->tam;
    hash->elementos_hash=auxiliar;
    hash->cant_elementos=0;
-   for( size_t i = 0; i < hash->tam-1; i++ ){
+   hash->tam=tamanio_a_reasignar;
+   nodo_t* actual;
+   for( size_t i = 0; i < tamanio_anterior; i++ ){
   		if(tabla_a_reemplazar[i]){
 			actual=tabla_a_reemplazar[i];
 			while(actual){
@@ -158,16 +156,15 @@ bool _hash_redimensionar(hash_t* hash, size_t tamanio_a_reasignar ){
 
    }
    free(tabla_a_reemplazar);
-   hash->tam=tamanio_a_reasignar;
    return true;
 }
 
 
 bool hash_guardar(hash_t *hash, const char* clave, void *dato)
 {
-   unsigned long pos = hash_string(clave);
-   float factor_de_carga = (float)hash->cant_elementos/(float)hash->tam;
-   if(factor_de_carga>=TOPE_FACTOR_CARGA || pos>hash->tam){
+	unsigned long pos = _funcion_hash(clave,hash->tam);
+	float factor_de_carga = (float)hash->cant_elementos/(float)hash->tam;
+    if(factor_de_carga>=TOPE_FACTOR_CARGA || pos>hash->tam){
 	   size_t nuevo_tamanio = hash->tam*FACTOR_MULTIPLICADOR;
 	   if(!_hash_redimensionar(hash,nuevo_tamanio)){
 		   return false;
@@ -179,11 +176,9 @@ bool hash_guardar(hash_t *hash, const char* clave, void *dato)
 
 void *hash_borrar(hash_t *hash, const char *clave)
 {
-	unsigned long pos = hash_string(clave);
-
+	unsigned long pos = _funcion_hash(clave,hash->tam);
 	nodo_t* cabeza_lista = hash->elementos_hash[pos];
 	nodo_t* anterior = NULL;
-
 	while( cabeza_lista != NULL ) /* debemos iterar para encontarlo*/
 	{
 		if( !strcmp(cabeza_lista->llave, clave) )
@@ -218,7 +213,7 @@ void *hash_borrar(hash_t *hash, const char *clave)
 
 void *hash_obtener(const hash_t *hash, const char* clave)
 {
-	unsigned long pos = hash_string(clave);
+	unsigned long int pos = _funcion_hash(clave,hash->tam);
 	nodo_t* inicio = hash->elementos_hash[pos];
 
 	while( inicio != NULL )
@@ -238,14 +233,8 @@ bool hash_pertenece(const hash_t *hash, const char *clave)
 	if(!hash_cantidad(hash)){
 		return false;
 	}
-
-	/* nó, recordemos que aplicando la funcion hash
-	a clave nos dá automaticamente su posición index en la tabla de hash
-	solo debemos iterar desde esa posicion hasta finalizar  */
-
-	unsigned long pos = hash_string(clave);
-
-	for( nodo_t* e = hash->elementos_hash[pos]; e; e = e->siguiente ) 
+	unsigned long pos = _funcion_hash(clave,hash->tam);
+	for( nodo_t* e = hash->elementos_hash[pos]; e; e = e->siguiente )
 		if( !strcmp(e->llave, clave) )
 			return true;
 
@@ -262,9 +251,9 @@ void hash_destruir(hash_t *hash)
 	if(hash->cant_elementos==0){
 		free(hash->elementos_hash);
 		free(hash);
+
 		return;
 	}
-
 	nodo_t* tmp_vagon = NULL;
 	for( size_t i = 0; i < hash->tam; i++ )
 	{
@@ -323,13 +312,15 @@ bool hash_iter_avanzar(hash_iter_t* iter){
 	}
 	else
 	{
-		iter->index++;
-		iter->elemento=iter->tabla_hash->elementos_hash[iter->index];
-		while( iter->elemento == NULL && iter->index<iter->tabla_hash->tam-1)
-		{
+
+		do{
 			iter->index++;
-			iter->elemento = iter->tabla_hash->elementos_hash[iter->index];
-		}
+			if(iter->index>iter->tabla_hash->tam-1){
+				break;
+			}
+			iter->elemento=iter->tabla_hash->elementos_hash[iter->index];
+		}while( iter->elemento == NULL);
+
 
 	}
 	iter->iterados++;
